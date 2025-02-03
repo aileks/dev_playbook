@@ -1,0 +1,161 @@
+---
+- name: Set up Pop!_OS 24.04 with necessary software
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Enable Universe repository
+      apt_repository:
+        repo: "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe"
+        state: present
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install necessary packages
+      apt:
+        name:
+          - build-essential
+          - libssl-dev
+          - zlib1g-dev
+          - libbz2-dev
+          - libreadline-dev
+          - libsqlite3-dev
+          - libncursesw5-dev
+          - xz-utils
+          - tk-dev
+          - libxml2-dev
+          - libxmlsec1-dev
+          - libffi-dev
+          - liblzma-dev
+          - git
+          - neovim
+          - zsh
+          - tmux
+          - fzf
+          - ripgrep
+          - eza
+          - trash-cli
+          - dunst
+          - fcitx5
+          - fcitx5-rime
+          - feh
+        state: present
+
+    - name: Add WezTerm repository key
+      apt_key:
+        url: https://apt.fury.io/wez/gpg.key
+        id: wezterm-fury.gpg
+        keyring: /etc/apt/keyrings/wezterm-fury.gpg
+
+    - name: Add WezTerm repository
+      apt_repository:
+        repo: 'deb [signed-by=/etc/apt/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *'
+        state: present
+        filename: wezterm.list
+
+    - name: Install WezTerm
+      apt:
+        name: wezterm
+        state: present
+
+    - name: Download Fastfetch
+      get_url:
+        url: https://github.com/fastfetch-cli/fastfetch/releases/download/2.35.0/fastfetch-linux-amd64.deb
+        dest: /tmp/fastfetch-linux-amd64.deb
+
+    - name: Install Fastfetch
+      dpkg:
+        deb: /tmp/fastfetch-linux-amd64.deb
+      register: fastfetch_install
+      ignore_errors: yes
+
+    - name: Fix Fastfetch dependencies (if needed)
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ fastfetch_install.stdout_lines | select('match', 'dpkg: dependency problems prevent configuration') | map('regex_replace', '.*depends on ([^;]+);.*', '\\1') | list }}"
+      when: fastfetch_install is failed
+
+    - name: Download JetBrains Toolbox
+      get_url:
+        url: https://www.jetbrains.com/toolbox-app/download/download-thanks.html?platform=linux
+        dest: /tmp/jetbrains-toolbox.tar.gz
+
+    - name: Install JetBrains Toolbox
+      unarchive:
+        src: /tmp/jetbrains-toolbox.tar.gz
+        dest: /opt/jetbrains-toolbox
+        remote_src: yes
+      file:
+        path: /opt/jetbrains-toolbox/jetbrains-toolbox
+        mode: '0755'
+      command: /opt/jetbrains-toolbox/jetbrains-toolbox
+
+    - name: Download Anki
+      get_url:
+        url: https://github.com/ankitects/anki/releases/download/24.11/anki-24.11-linux-qt6.tar.zst
+        dest: /tmp/anki-24.11-linux-qt6.tar.zst
+
+    - name: Install Anki
+      unarchive:
+        src: /tmp/anki-24.11-linux-qt6.tar.zst
+        dest: /opt/anki
+        remote_src: yes
+      file:
+        path: /opt/anki/anki
+        mode: '0755'
+      command: /opt/anki/anki
+
+    - name: Download Discord
+      get_url:
+        url: https://discord.com/api/download?platform=linux&format=deb
+        dest: /tmp/discord.deb
+
+    - name: Install Discord
+      dpkg:
+        deb: /tmp/discord.deb
+      register: discord_install
+      ignore_errors: yes
+
+    - name: Fix Discord dependencies (if needed)
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ discord_install.stdout_lines | select('match', 'dpkg: dependency problems prevent configuration') | map('regex_replace', '.*depends on ([^;]+);.*', '\\1') | list }}"
+      when: discord_install is failed
+
+    - name: Clone dotfiles repository
+      git:
+        repo: https://github.com/aileks/dotfiles.git
+        dest: ~/dotfiles
+        clone: yes
+        update: no
+
+    - name: Run setup script from dotfiles repository
+      command: ~/dotfiles/setup.sh
+      args:
+        chdir: ~/dotfiles
+
+    - name: Install pyenv
+      shell: |
+        curl -fsSL https://pyenv.run | bash
+      args:
+        creates: "{{ ansible_env.HOME }}/.pyenv/bin/pyenv"
+
+    - name: Install nvm
+      shell: |
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+      args:
+        creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
+
+    - name: Create DWM session desktop file
+      copy:
+        content: |
+          [Desktop Entry]
+          Name=DWM
+          Comment=Dynamic Window Manager
+          Exec=/home/aileks/.config/dwm/scripts/./run.sh
+          Type=Application
+        dest: /usr/share/xsessions/dwm.desktop
+
