@@ -6,7 +6,7 @@ This repository contains an Ansible playbook to automate the setup of a Pop!_OS 
 
 - **System Setup**:
   - Enables the Universe repository.
-  - Installs essential packages (e.g., `git`, `neovim`, `zsh`, `tmux`, etc.).
+  - Installs essential packages (e.g. `git`, `neovim`, `zsh`, `tmux`, etc.).
   - Sets up WezTerm, Fastfetch, and other tools.
   - Configures `fcitx5` with Rime for Simplified Chinese input.
 
