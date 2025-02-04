@@ -43,5 +43,5 @@ sudo apt install ansible
 
 ```bash
 git clone https://github.com/aileks/dev_playbook.git && cd dev_playbook
-ansible-playbook os_playbook.yml --ask-become-pass
+ansible-playbook os_setup.yml --ask-become-pass
 ```
