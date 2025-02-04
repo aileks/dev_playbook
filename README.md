@@ -2,6 +2,12 @@
 
 This repository contains an Ansible playbook to automate the setup of a Pop!_OS 24.04 system with all the necessary software, configurations, and tools I use for development and daily tasks.
 
+## To-Do
+
+- [ ] Add missing utilities (i.e. bluetooth)
+- [ ] Automate font installs
+- [ ] Add basic gitconfig
+
 ## Features
 
 - **System Setup**:
