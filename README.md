@@ -21,7 +21,7 @@ This repository contains an Ansible playbook to automate the setup of a Pop!_OS 
   - Includes build dependencies for `pyenv`.
 
 - **Dotfiles Integration**:
-  - Clones and sets up my [dotfiles repository](https://github.com/aileks/dotfiles.git), which includes configurations for `dwm`, `oh-my-zsh`, and more.
+  - Clones and sets up my [dotfiles repository](https://github.com/aileks/dotfiles), which includes configurations for `dwm`, `oh-my-zsh`, and more.
 
 - **Desktop Environment**:
   - Creates a session desktop file for `dwm`.
