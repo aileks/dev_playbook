@@ -1,9 +1,7 @@
 ---
-- name: Set up Pop!_OS 24.04 workstation
+- name: Set up Pop!_OS 24.04
   hosts: localhost
   become: no
-  vars:
-    the_user: "{{ ansible_user_id }}"
   tasks:
     - name: Enable Universe repository
       apt_repository:
@@ -64,6 +62,9 @@
           - picom
           - acpi
           - zoxide
+          - maim
+          - xclip
+          - nsxiv
         state: present
       become: yes
 
@@ -75,7 +76,7 @@
     - name: Ensure Zsh is the default shell
       become: yes
       user:
-        name: "{{ the_user }}"
+        name: "{{ ansible_user_id }}"
         shell: /usr/bin/zsh
 
     - name: Download Oh-My-Zsh installation script
@@ -84,9 +85,9 @@
         dest: /tmp/install_ohmyzsh.sh
 
     - name: Run Oh-My-Zsh installation script
-      command: sh /tmp/install_ohmyzsh.sh --unattended
+      shell: sh /tmp/install_ohmyzsh.sh --unattended
       register: ohmyzsh_result
-      failed_when: "'FAILED' in ohmyzsh_result.stderr" 
+      failed_when: "'FAILED' in ohmyzsh_result.stderr"
 
     - name: Download Fastfetch
       get_url:
@@ -98,14 +99,6 @@
         deb: /tmp/fastfetch-linux-amd64.deb
       register: fastfetch_install
       ignore_errors: yes
-      become: yes
-
-    - name: Fix Fastfetch dependencies (if needed)
-      apt:
-        name: "{{ item }}"
-        state: present
-      loop: "{{ fastfetch_install.stdout_lines | select('match', 'dpkg: dependency problems prevent configuration') | map('regex_replace', '.*depends on ([^;]+);.*', '\\1') | list }}"
-      when: fastfetch_install is failed
       become: yes
 
     - name: Ensure Anki directory exists
@@ -126,7 +119,7 @@
         remote_src: yes
         extra_opts:
           - "--strip-components=1"
-    
+ 
     - name: Set permissions for Anki
       file:
         path: /tmp/anki/install.sh
@@ -150,56 +143,56 @@
       ignore_errors: yes
       become: yes
 
-    - name: Fix Discord dependencies (if needed)
-      apt:
-        name: "{{ item }}"
-        state: present
-      loop: "{{ discord_install.stdout_lines | select('match', 'dpkg: dependency problems prevent configuration') | map('regex_replace', '.*depends on ([^;]+);.*', '\\1') | list }}"
-      when: discord_install is failed
+    - name: Fix potential missing dependencies
+      command: apt-get install -f -y
       become: yes
 
     - name: Clone dotfiles repository
       git:
         repo: https://github.com/aileks/dotfiles.git
-        dest: "/home/{{ the_user }}/dotfiles"
+        dest: "{{ ansible_env.HOME }}/dotfiles"
         clone: yes
         update: no
 
     - name: Run setup script from dotfiles repository
-      command: ~/dotfiles/setup.sh
+      shell: bash -c "{{ ansible_env.HOME }}/dotfiles/setup.sh"
       args:
-        chdir: ~/dotfiles
+        chdir: "{{ ansible_env.HOME }}/dotfiles"
+
+    - name: Compile and install DWM (requires sudo)
+      shell: make install
+      args:
+        chdir: "{{ ansible_env.HOME }}/dotfiles/dwm"
       become: yes
 
     - name: Install pyenv
-      shell: |
-        curl -fsSL https://pyenv.run | bash
+      shell: curl -fsSL https://pyenv.run | bash
       args:
         creates: "{{ ansible_env.HOME }}/.pyenv/bin/pyenv"
-    
-    - name: Install Python via pyenv
-      command: pyenv install 3.13
-      ignore_errors: yes
-
-    - name: Set global Python version
-      command: pyenv global 3.13
 
     - name: Install nvm
-      shell: |
+      shell: >
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
       args:
         creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
 
-    - name: Source nvm
-      shell: |
-        export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    - name: Install Python via pyenv
+      shell: pyenv install 3.13
+      ignore_errors: yes
+
+    - name: Set global Python version
+      shell: pyenv global 3.13
 
     - name: Install Node via nvm
-      command: nvm install --lts
+      shell: bash -c "source {{ ansible_env.HOME }}/.nvm/nvm.sh && nvm install --lts"
+      args:
+        executable: /bin/bash
       ignore_errors: yes
 
     - name: Set global Node version
-      command: nvm use --lts
+      shell: bash -c "source {{ ansible_env.HOME }}/.nvm/nvm.sh && nvm use --lts"
+      args:
+        executable: /bin/bash
 
     - name: Ensure xsessions directory exists
       file:

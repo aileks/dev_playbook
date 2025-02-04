@@ -21,7 +21,7 @@ This repository contains an Ansible playbook to automate the setup of a Pop!_OS 
   - Creates a session desktop file for `dwm`.
 
 - **Third-Party Software**:
-  - Installs JetBrains Toolbox, Anki, Brave Browser, and Discord.
+  - Installs Anki, Brave Browser, and Discord.
 
 ## Prerequisites
 
@@ -31,4 +31,11 @@ This repository contains an Ansible playbook to automate the setup of a Pop!_OS 
 ```bash
 sudo apt update
 sudo apt install ansible
+```
+
+## Running Playbook
+
+```bash
+git clone https://github.com/aileks/dev_playbook.git && cd dev_playbook
+ansible-playbook os_playbook.yml --ask-become-pass
 ```
