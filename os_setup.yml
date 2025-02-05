@@ -54,6 +54,8 @@
           - eza
           - trash-cli
           - dunst
+          - mpv
+          - celluloid
           - fcitx5
           - fcitx5-rime
           - feh
