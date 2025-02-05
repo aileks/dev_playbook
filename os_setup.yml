@@ -146,7 +146,7 @@
       become: yes
 
     - name: Fix potential missing dependencies
-      command: apt-get install -f -y
+      command: apt install -f -y
       become: yes
 
     - name: Clone dotfiles repository
